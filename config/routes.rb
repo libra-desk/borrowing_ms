@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
-  resources :borrowings, only: [:index, :create] do 
+  resources :borrowings, only: [ :index, :create ] do
     member do
-      post :return
+      post :return_book
     end
   end
 
