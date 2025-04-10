@@ -26,6 +26,7 @@ class BorrowingsController < ApplicationController
     end
   end
 
+  # Borrowings should not be destroyed. This action is solely for an admin
   def destroy
     borrowing = Borrowing.find_by(id: params[:id])
 
@@ -50,7 +51,7 @@ class BorrowingsController < ApplicationController
   private
 
   def borrowing_params
-    params.permit(:student_id, :book_id)
+    params.require(:borrowing).permit(:student_id, :book_id)
   end
 
   def can_borrow?(student_id)
