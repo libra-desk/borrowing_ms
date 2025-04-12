@@ -21,14 +21,14 @@ class BorrowingsController < ApplicationController
       borrowing.returned = false
 
       if borrowing.save
-        payload = {
-          book_id: borrowing_params['book_id']
-        }
-  
-        # Here below we are calling book_ms to update the status of this borrowing.
-        # TODO: Try to do this calling via Kafka so that you dont have to 
-        # wait for book_ms response. 
-        response = call_book_ms("/books/#{borrowing_params['book_id']}/borrow", payload)
+        # The method transform_keys(&:to_s) is used to convert the symbols to strings
+        # because ruby hash style is not supported in sidekiq
+        KafkaProducerJob.perform_async("book_borrowed",
+                                       {
+                                         student_id: borrowing_params['student_id'],
+                                         book_id: borrowing_params['book_id']
+                                       }.transform_keys(&:to_s)
+                                      )
         head :created
       else
         head :unprocessable_entity
@@ -90,12 +90,15 @@ class BorrowingsController < ApplicationController
     params.require(:borrowing).permit(:student_id, :book_id)
   end
 
+  # TODO: Change this 
   def can_student_borrow?(student_id)
-    Borrowing.where(student_id: student_id, returned: false).count < MAX_BOOKS_BORROWABLE
+    true
+    # Borrowing.where(student_id: student_id, returned: false).count < MAX_BOOKS_BORROWABLE
   end
 
   def if_book_available?(book_id)
-    !Borrowing.find_by(book_id: book_id, returned: false).present?
+    true
+    # !Borrowing.find_by(book_id: book_id, returned: false).present?
   end
 
   def call_book_ms endpoint, payload
