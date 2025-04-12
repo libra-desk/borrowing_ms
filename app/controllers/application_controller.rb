@@ -4,7 +4,7 @@ class ApplicationController < ActionController::API
   private
 
   def authenticate_request
-    token = request.headers["Authorization"]
+    @token = request.headers["Authorization"]
     decoded_value = JsonWebToken.decode token
     @current_user = decoded_value ? decoded_value : nil
 
@@ -16,5 +16,9 @@ class ApplicationController < ActionController::API
 
   def current_user
     @current_user
+  end
+
+  def token
+    @token 
   end
 end

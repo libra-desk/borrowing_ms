@@ -4,12 +4,12 @@ class Borrowing < ApplicationRecord
 
   # Below is the validation that if the book was borrowed and not yet returned,
   # then another person cannot borrow that book.
-  validates :book_id,
-            uniqueness: {
-              scope: :returned,
-              message: "is already borrowed"
-            },
-            unless: :returned?
+  # validates :book_id,
+  #           uniqueness: {
+  #             scope: :returned,
+  #             message: "is already borrowed"
+  #           },
+  #           unless: :returned?
 
   def compute_fine
     return 0 if returned && returned_at <= due_at
