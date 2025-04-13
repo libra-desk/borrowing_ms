@@ -26,7 +26,8 @@ class BorrowingsController < ApplicationController
         KafkaProducerJob.perform_async("book_borrowed",
                                        {
                                          book_id: borrowing_params['book_id'],
-                                         available: false
+                                         available: false,
+                                         email: params['email']
                                        }.transform_keys(&:to_s)
                                       )
         head :created
@@ -76,7 +77,8 @@ class BorrowingsController < ApplicationController
       KafkaProducerJob.perform_async("book_returned",
                                      {
                                        book_id: borrowing_params[:book_id],
-                                       available: true
+                                       available: true,
+                                       email: params[:email]
                                      }.transform_keys(&:to_s)
                                     )
 
