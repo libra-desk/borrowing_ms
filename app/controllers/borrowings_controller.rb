@@ -25,8 +25,8 @@ class BorrowingsController < ApplicationController
         # because ruby hash style is not supported in sidekiq
         KafkaProducerJob.perform_async("book_borrowed",
                                        {
-                                         student_id: borrowing_params['student_id'],
-                                         book_id: borrowing_params['book_id']
+                                         book_id: borrowing_params['book_id'],
+                                         available: false
                                        }.transform_keys(&:to_s)
                                       )
         head :created
@@ -72,11 +72,13 @@ class BorrowingsController < ApplicationController
       borrowing.update(returned: true,
                        returned_at: Time.now
                       )
-      payload = {
-        book_id: borrowing_params['book_id']
-      }
 
-      response = call_book_ms("/books/#{borrowing_params['book_id']}/return", payload)
+      KafkaProducerJob.perform_async("book_returned",
+                                     {
+                                       book_id: borrowing_params[:book_id],
+                                       available: true
+                                     }.transform_keys(&:to_s)
+                                    )
 
       render json: borrowing.as_json.merge(fine_incurred: borrowing.compute_fine)
     else
@@ -90,19 +92,15 @@ class BorrowingsController < ApplicationController
     params.require(:borrowing).permit(:student_id, :book_id)
   end
 
-  # TODO: Change this 
   def can_student_borrow?(student_id)
-    true
-    # Borrowing.where(student_id: student_id, returned: false).count < MAX_BOOKS_BORROWABLE
+    Borrowing.where(student_id: student_id, returned: false).count < MAX_BOOKS_BORROWABLE
   end
 
   def if_book_available?(book_id)
-    true
-    # !Borrowing.find_by(book_id: book_id, returned: false).present?
+    !Borrowing.find_by(book_id: book_id, returned: false).present?
   end
 
   def call_book_ms endpoint, payload
-    # uri = URI("http://localhost:3001/books/#{book_id}/#{endpoint}")
     uri = URI("http://localhost:3001/#{endpoint}")
 
     http = Net::HTTP.new(uri.host, uri.port)
